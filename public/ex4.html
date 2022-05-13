@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en-US">
+  <head>
+    <meta charset="UTF-8">
+    <title>Exercise 3</title>
+    <style>
+/*      dl {
+         border: 3px double #ccc;
+         padding: 0.5em;
+     } */
+     dt {
+         float: left;
+         clear: left;
+         width: 100px;
+         text-align: right;
+         font-weight: bold;
+         color: #f0595b;
+     }
+     dt::after {
+         content: ":";
+     }
+     dd {
+         margin: 0 0 0 110px;
+         padding: 0 0 0.5em 0;
+     }
+
+     fieldset {
+         padding: -25px 0 -25px;
+         margin: 20px 0px 20px 0px;
+     }
+
+     input[type="submit"] {
+         color: #fff;
+         background: #f0595b;
+         border-color: #f0595b;
+         border-radius: 5px;
+         width: 100px;
+         height: 50px;
+     }
+    </style>
+  </head>
+  <body>
+    <button>Create New Schedy</button>
+    <form method="post" action="/api/staff_members" id="template">
+      <fieldset><legend>Schedule 1</legend>
+          <dl>
+        <dt>
+          <label for="Staff Name">Staff Name</label>
+        </dt>
+        <dd>
+          <select class="namesList">
+            
+          </select>
+        </dd>
+        <dt>
+          <label for="date">Date</label>
+        </dt>
+        <dd>
+          <input type="text" id="name" name="date" placeholder="mm-dd-yy">
+        </dd>
+        <dt>
+          <label for="time">Time</label>
+        </dt>
+        <dd>
+          <input type="text" name="time" placeholder="hh:mm">
+        </dd>
+      </dl>
+      </fieldset>
+      <input class="btn" type="submit">
+    </form>
+    <script>
+      let request = new XMLHttpRequest();
+      request.open('GET', 'http://localhost:3000/api/staff_members');
+      request.setRequestHeader('Content-Type', 'application/json; charset=utf-8');
+      let data;
+      let button = document.querySelector('button');
+      let subBtn = document.querySelector('.btn')
+      let selectAllNames = [].slice.call(document.querySelectorAll(".namesList"));
+     
+        
+      function optionsCreate(data) {
+        let len = selectAllNames.length;
+        for (let i = 0; i < len; i++) {
+          data.forEach((obj, ind) => {
+            selectAllNames[i].options[ind] = new Option(obj.name);
+          })
+        }
+      }
+      request.addEventListener('load', event => {
+        data = JSON.parse(request.response)
+        optionsCreate(data);
+      })
+      request.send();
+      
+      let form = document.querySelector('form');
+      form.addEventListener('submit', event => {
+        event.preventDefault();
+      })
+
+      function createNewSchedy() {
+        let template = document.querySelectorAll('fieldset');
+        let newForm = template[template.length - 1].cloneNode(true);
+        let lastText = Number(template[template.length - 1].querySelector('legend').textContent.match(/\d+/)[0])
+        let newFormLegend = newForm.querySelector('legend')
+        newFormLegend.textContent = `Schedule ${lastText + 1}`
+        let btn = document.querySelector('.btn');
+        form.insertBefore(newForm, btn);
+        optionsCreate(data);
+      }
+
+      button.addEventListener('click', event => {
+        event.preventDefault();
+        
+        createNewSchedy();
+      })
+
+      function schedyData() {
+        let totalSchedules = [];
+        let dls = document.querySelectorAll('dl');
+        dls = [].slice.call(dls);
+        dls.forEach(form => {
+        let select = form.querySelector(".namesList");
+          let res = {};
+          let list = form.querySelectorAll('input');
+          list = [].slice.call(list);
+          list.forEach(input => {
+            res[input.name] = input.value;
+          })
+          let obj = data.filter(obj => obj.name === select.value)
+          res["staff_id"] = obj[0].id;
+          totalSchedules.push(res);
+        })
+        return totalSchedules;
+      }
+
+      form.addEventListener('submit', event => {
+        event.preventDefault();
+        
+        let newData = {"schedules": schedyData()};
+        let schedualData = JSON.stringify(newData);
+        let request = new XMLHttpRequest();
+        request.open('POST', 'http://localhost:3000/api/schedules');
+        request.setRequestHeader('Content-Type', 'application/json');
+        request.send(schedualData)
+          
+        request.addEventListener('load', event => {
+            if (request.status === 201) {
+                alert('shit worked fam')
+            } else {
+                console.log(schedualData)
+                
+                alert('shit didnt work fam')
+            }
+        })
+      })
+    </script>
+  </body>
+</html>

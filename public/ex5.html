@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <title></title>
+
+  <!-- <link href="my.css" rel="stylesheet"> -->
+</head>
+
+<body>
+  <h1>Schedules</h1>
+  <p>Hello, world!</p>
+  <p>Please select one schedule <select class="schedys"></select></p>
+  <form><p>Email: <input type="email" value='enrico_prosacco@ortiz.com'><input type='submit'></p></form>
+  <div style="background:gray;width:100%;height:250px;" class="student" hidden>
+    <h1>New Student Details</h1>
+    <form>
+      <dl>
+        <dt>
+          <label for="email">Email</label>
+        </dt>
+        <dd name='email'>
+          <input type="email" name="email" value="jakedevar@gmial.com">
+        </dd>
+        <dt>
+          <label for="name">Name</label>
+        </dt>
+        <dd name="name">
+          <input type="text" name="name" value='a'>
+        </dd>
+        <dt>
+          <label for="booking">Booking</label>
+        </dt>
+        <dd name="booking">
+          <input type="text" name="booking_sequence" class="booking_seq" value='515266'>
+        </dd>
+      </dl>
+      <input type="submit" style="margin:0px 0px 0px 40px">
+    </form>
+    
+    
+  </div>
+  <script>
+    let shcedys = document.querySelector('.schedys');
+    let request = new XMLHttpRequest();
+    let staff = new XMLHttpRequest();
+    let form = document.querySelector('form');
+    let hidden = document.querySelector('.student');
+    let hiddenForm = hidden.querySelector('form');
+    
+    let fullStaff;
+    staff.open('GET', 'http://localhost:3000/api/staff_members')
+    staff.addEventListener('load', e => {
+      fullStaff = [].slice.call(JSON.parse(staff.response))
+      fullStaff = fullStaff.map(obj => obj.name)
+    })
+    staff.send()
+    
+    let data;
+  
+    request.open("GET", 'http://localhost:3000/api/schedules');
+    request.addEventListener('load', event => {
+      data = JSON.parse(request.response).filter(obj => !obj.student_email)
+      data.forEach((sched, i) => {
+        shcedys.options[i] = new Option(`${fullStaff[sched.staff_id - 1]} | ${sched.date} | ${sched.time}`)
+      })      
+    })
+    request.send();
+    // send student and sched id 
+    form.addEventListener('submit', e => {
+      e.preventDefault()
+      let email = document.querySelector('input').value
+      attemptBooking(email)
+    })
+    // send student and sched id 
+    function attemptBooking(email) {
+      let request = new XMLHttpRequest();
+      request.open('POST', 'http://localhost:3000/api/bookings')
+      request.setRequestHeader('Content-Type', 'application/json')
+      let id = data[document.querySelector('select').selectedIndex].id;
+      let res = {id, email}
+      console.log(res,data[document.querySelector('select').selectedIndex])
+      res = JSON.stringify(res)
+      request.addEventListener('load', e => {
+        if (request.status === 204) {
+          alert(`${request.response}`)
+        } else if (/\d+/.test(request.response)){
+          document.querySelector('.booking_seq').value = request.response.match(/\d+/)[0]
+          hidden.hidden = false;
+          alert(`${request.response}`)
+        } else {
+          alert(`${request.response}`)
+        }
+      })
+      request.send(res);
+    }
+    hiddenForm.addEventListener('submit', e => {
+      e.preventDefault();
+      let res = {}
+      let data = hiddenForm.querySelectorAll('input')
+      let request = new XMLHttpRequest();
+      request.open('POST', 'http://localhost:3000/api/students')
+      request.setRequestHeader('Content-Type', 'application/json');
+      
+      let len = data.length
+      for (let i = 0; i < len - 1; i++) {
+        if (res[data[i].name === 'booking_sequence']) {
+          res[data[i].name] = Number(data[i].value)
+        } else {
+          res[data[i].name] = data[i].value
+        }
+      }
+      request.addEventListener('load', e => {
+        if (request.status === 201) {
+          alert('student creation was successfull')
+          let newReq = new XMLHttpRequest();
+          newReq.open('GET', 'http://localhost:3000/api/students')
+          newReq.addEventListener('load', _ => console.log(newReq.response))
+          newReq.send()
+        } else if (request.status >= 400) {
+          alert(`${request.response}`)
+        }
+      })
+      
+      res = JSON.stringify(res)
+      console.log(res)
+      request.send(res)
+      // /api/students email, name, booking_sequence 201 and 403 for booking sequence
+      
+      // /api/bookings bookds a staff member schedule needs id of sched and student email 204 and 404
+    })
+  </script>
+</body>
+
+</html>
