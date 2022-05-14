@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en-US">
+  <head>
+    <meta charset="utf-8">
+    <title>get dates</title>
+  </head>
+  <body>
+  <button class="sched">Cancel Schedule</button>    
+  <button class="booking">Cancel Booking</button>
+  <br>
+  <select></select>
+    <script>
+      let select = document.querySelector('select');
+      let prettyPrint;
+      
+      let staff = new XMLHttpRequest();
+      staff.open('GET', "http://localhost:3000/api/staff_members")
+      staff.addEventListener('load', e => {
+        staff = [].slice.call(JSON.parse(staff.response))        
+      })
+      
+      function createOptions() {
+        select.options.length = 0;
+        prettyPrint.forEach((obj, ind) => {
+          let email = obj.email || "undefined email address"
+          select.options[ind] = new Option(`schedule id: ${obj.id} | ${obj.name} | student: ${email}`)
+        })
+      }
+      
+      staff.send();
+      let schedes = new XMLHttpRequest();
+      schedes.open('GET', "http://localhost:3000/api/schedules");
+      schedes.addEventListener('load', e => {
+        schedes = [].slice.call(JSON.parse(schedes.response))
+        prettyPrint = schedes.map(obj => {
+          let name = staff[obj.staff_id - 1].name
+          return {
+            id: obj.id,
+            name,
+            email: obj.student_email,
+          }
+        })
+        createOptions()
+      })
+      schedes.send();
+
+      let sched = document.querySelector('.sched');
+      let booking = document.querySelector('.booking');
+      
+      function cancelSchedule() {
+        let id = prettyPrint[select.selectedIndex].id
+        let params = `http://localhost:3000/api/schedules/${id}`
+        let del = new XMLHttpRequest();
+        del.open('DELETE', params)
+        del.addEventListener('load', e => {
+          if (del.status === 204) {
+            alert(`${del.response}`)
+          } else {
+            alert(`${del.response}`)
+          }
+        })
+        del.send();
+      }
+      sched.addEventListener('click', e => {
+        cancelSchedule();
+        createOptions();
+      })
+      function cancelBooking() {
+        let id = prettyPrint[select.selectedIndex].id
+        let booking = new XMLHttpRequest();
+        let params = `http://localhost:3000/api/bookings/${id}`
+        booking.open('PUT', params)
+        booking.addEventListener('load', e => {
+          alert(`${booking.response}`)
+        })
+        booking.send()
+      }
+
+      booking.addEventListener('click', e => {
+        cancelBooking();
+        createOptions();
+      })
+      
+    </script>
+  </body>
+</html>

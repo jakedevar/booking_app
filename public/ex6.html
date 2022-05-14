@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en-US">
+  <head>
+    <meta charset="utf-8">
+    <title>get dates</title>
+  </head>
+  <body>
+    <ul class='list'>
+      
+    </ul>
+    <script>
+      let list = document.querySelector('.list')
+      function createNewListItem(text, data) {
+        let newDate = document.createElement('li');
+        newDate.textContent = text;
+        newDate.style.fontSize = '30px'
+        let newItem = document.createElement('li');
+        newItem.textContent = data
+        let subList = document.createElement('ul');
+        subList.classList.add('sub_item')
+        
+        subList.hidden = true;
+        newItem.textContent = data
+        subList.appendChild(newItem)
+        newDate.appendChild(subList);
+        list.appendChild(newDate);
+      }
+      let request = new XMLHttpRequest()
+      let arr;
+      request.open('GET', 'http://localhost:3000/api/schedules');
+      request.addEventListener('load', e => {
+        arr = [].slice.call(JSON.parse(request.response));
+        let staffRequest = new XMLHttpRequest();
+        staffRequest.open("GET", 'http://localhost:3000/api/staff_members')
+        staffRequest.addEventListener('load', e => {
+          let staff = [].slice.call(JSON.parse(staffRequest.response));
+          arr.forEach(obj => {
+            if (obj.student_email) {
+              let str = `${staff[obj.staff_id - 1].name} | ${obj.student_email} | ${obj.time}`
+              createNewListItem(obj.date, str)
+            };
+          })
+        })
+        staffRequest.send();
+      })
+      request.send()
+      list.addEventListener('click', e => {
+        if (e.target.tagName === 'LI') {
+          let targ = e.target.querySelector('.sub_item')
+          
+          targ.hidden = !targ.hidden
+        }
+      })
+    </script>
+  </body>
+</html>
